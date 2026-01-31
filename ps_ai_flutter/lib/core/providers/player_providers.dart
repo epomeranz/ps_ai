@@ -11,3 +11,10 @@ final playerServiceProvider = Provider<PlayerService>((ref) {
 final playersStreamProvider = StreamProvider<List<Player>>((ref) {
   return ref.watch(playerServiceProvider).getPlayers();
 });
+
+final activePlayerProvider = StreamProvider.family<String?, String>((
+  ref,
+  sportType,
+) {
+  return ref.watch(playerServiceProvider).getActivePlayerId(sportType);
+});

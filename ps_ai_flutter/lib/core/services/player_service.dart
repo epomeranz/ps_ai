@@ -24,4 +24,18 @@ class PlayerService {
   Future<void> deletePlayer(String id) async {
     await _playersCollection.doc(id).delete();
   }
+
+  Stream<String?> getActivePlayerId(String sportType) {
+    return _firestore
+        .collection('active_players')
+        .doc(sportType)
+        .snapshots()
+        .map((doc) => doc.data()?['playerId'] as String?);
+  }
+
+  Future<void> setActivePlayerId(String sportType, String playerId) async {
+    await _firestore.collection('active_players').doc(sportType).set({
+      'playerId': playerId,
+    });
+  }
 }
