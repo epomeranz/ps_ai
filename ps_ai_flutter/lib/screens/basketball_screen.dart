@@ -22,45 +22,80 @@ class BasketballScreen extends StatelessWidget {
             colors: [Colors.orange.shade50, Colors.white],
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(
-              Icons.sports_basketball,
-              size: 100,
-              color: Colors.orange,
-            ),
-            const SizedBox(height: 40),
-            _buildNavButton(
-              context,
-              title: 'Train Shoots',
-              icon: Icons.fitness_center,
-              color: Colors.orange.shade700,
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const TrainShootsScreen(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildNavButton(
-              context,
-              title: 'Dashboard',
-              icon: Icons.dashboard,
-              color: Colors.blue.shade700,
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const DashboardScreen(),
-                ),
-              ),
-            ),
-          ],
+        child: OrientationBuilder(
+          builder: (context, orientation) {
+            final isPortrait = orientation == Orientation.portrait;
+            return isPortrait
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: _buildChildren(context),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.sports_basketball,
+                        size: 100,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 40),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _buildNavButtons(context),
+                        ),
+                      ),
+                    ],
+                  );
+          },
         ),
       ),
     );
+  }
+
+  List<Widget> _buildChildren(BuildContext context) {
+    return [
+      const Icon(
+        Icons.sports_basketball,
+        size: 100,
+        color: Colors.orange,
+      ),
+      const SizedBox(height: 40),
+      ..._buildNavButtons(context),
+    ];
+  }
+
+  List<Widget> _buildNavButtons(BuildContext context) {
+    return [
+      _buildNavButton(
+        context,
+        title: 'Train Shoots',
+        icon: Icons.fitness_center,
+        color: Colors.orange.shade700,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TrainShootsScreen(),
+          ),
+        ),
+      ),
+      const SizedBox(height: 20),
+      _buildNavButton(
+        context,
+        title: 'Dashboard',
+        icon: Icons.dashboard,
+        color: Colors.blue.shade700,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const DashboardScreen(),
+          ),
+        ),
+      ),
+    ];
   }
 
   Widget _buildNavButton(

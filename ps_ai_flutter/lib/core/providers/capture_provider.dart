@@ -18,6 +18,7 @@ class CaptureState {
   final CameraController? cameraController;
   final List<Pose> poses;
   final List<DetectedObject> objects;
+  final InputImageRotation rotation;
   final String? errorMessage;
   final TrackingSession? currentSession;
 
@@ -26,6 +27,7 @@ class CaptureState {
     this.cameraController,
     this.poses = const [],
     this.objects = const [],
+    this.rotation = InputImageRotation.rotation90deg,
     this.errorMessage,
     this.currentSession,
   });
@@ -35,6 +37,7 @@ class CaptureState {
     CameraController? cameraController,
     List<Pose>? poses,
     List<DetectedObject>? objects,
+    InputImageRotation? rotation,
     String? errorMessage,
     TrackingSession? currentSession,
   }) {
@@ -43,6 +46,7 @@ class CaptureState {
       cameraController: cameraController ?? this.cameraController,
       poses: poses ?? this.poses,
       objects: objects ?? this.objects,
+      rotation: rotation ?? this.rotation,
       errorMessage: errorMessage ?? this.errorMessage,
       currentSession: currentSession ?? this.currentSession,
     );
@@ -64,12 +68,12 @@ class CaptureController extends Notifier<CaptureState> {
   CaptureState build() {
     // Clean up on dispose
     ref.onDispose(() {
-      _StopAll();
+      _stopAll();
     });
     return CaptureState();
   }
 
-  Future<void> _StopAll() async {
+  Future<void> _stopAll() async {
     await _cameraService.stopImageStream();
     await _cameraService.dispose();
     await _mlService.dispose();
@@ -104,15 +108,23 @@ class CaptureController extends Notifier<CaptureState> {
   Future<void> _processFrame(CameraImage image) async {
     if (_isProcessing) return; // Drop frame if busy
     if (state.status != CaptureStatus.streaming &&
-        state.status != CaptureStatus.recording)
+        state.status != CaptureStatus.recording) {
       return;
+    }
 
     _isProcessing = true;
     _frameCount++;
 
     try {
       final camera = _cameraService.controller!.description;
-      final rotation = MLKitUtils.getRotation(camera.sensorOrientation);
+      final deviceOrientation =
+          _cameraService.controller!.value.deviceOrientation;
+      final rotation = MLKitUtils.getRotation(
+        camera.sensorOrientation,
+        deviceOrientation,
+        camera.lensDirection,
+      );
+
       final inputImage = MLKitUtils.inputImageFromCameraImage(
         image,
         camera,
@@ -127,15 +139,18 @@ class CaptureController extends Notifier<CaptureState> {
       // Always process pose
       final poses = await _mlService.processPose(inputImage);
 
-      // Process objects every 3rd frame to save resources, or every frame if recording?
-      // User tip: "process Pose every frame but only process the Ball detection every 2nd or 3rd frame"
+      // Process objects every 3rd frame to save resources
       List<DetectedObject> objects = state.objects;
       if (_frameCount % 3 == 0) {
         objects = await _mlService.processObjects(inputImage);
       }
 
-      // Update UI state
-      state = state.copyWith(poses: poses, objects: objects);
+      // Update UI state with rotation
+      state = state.copyWith(
+        poses: poses,
+        objects: objects,
+        rotation: rotation,
+      );
 
       // Save data if recording
       if (state.status == CaptureStatus.recording &&

@@ -1,7 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+
 import 'package:ps_ai_flutter/core/providers/capture_provider.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
 import 'package:ps_ai_flutter/widgets/tracking_overlay_painter.dart';
@@ -57,114 +57,125 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
     // This is simplified; robust implementations handling aspect ratio are more verbose.
     // Assuming full screen or fitted container.
 
-    return Stack(
-      children: [
-        // Camera Preview
-        CameraPreview(captureState.cameraController!),
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        final isPortrait = orientation == Orientation.portrait;
+        return Stack(
+          children: [
+            // Camera Preview
+            // TODO: Ensure preview fills the screen correctly in both orientations
+            Center(child: CameraPreview(captureState.cameraController!)),
 
-        // Tracking Overlay
-        if (captureState.status == CaptureStatus.streaming ||
-            captureState.status == CaptureStatus.recording)
-          CustomPaint(
-            painter: TrackingOverlayPainter(
-              poses: captureState.poses,
-              objects: captureState.objects,
-              rotation: InputImageRotation
-                  .rotation90deg, // Need real rotation from controller/utils
-              absoluteImageSize:
-                  captureState.cameraController!.value.previewSize!,
+            // Tracking Overlay
+            if (captureState.status == CaptureStatus.streaming ||
+                captureState.status == CaptureStatus.recording)
+              CustomPaint(
+                painter: TrackingOverlayPainter(
+                  poses: captureState.poses,
+                  objects: captureState.objects,
+                  rotation: captureState.rotation,
+                  absoluteImageSize:
+                      captureState.cameraController!.value.previewSize!,
+                ),
+                child: Container(),
+              ),
+
+            // Controls
+            Positioned(
+              bottom: isPortrait ? 30 : 0,
+              left: isPortrait ? 0 : null,
+              right: isPortrait ? 0 : 30,
+              top: isPortrait ? null : 0,
+              child: isPortrait
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: _buildControlButtons(captureState),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: _buildControlButtons(captureState),
+                    ),
             ),
-            child: Container(),
-          ),
 
-        // Controls
-        Positioned(
-          bottom: 30,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FloatingActionButton(
-                backgroundColor: captureState.status == CaptureStatus.recording
-                    ? Colors.red
-                    : Colors.white,
-                onPressed: () {
-                  if (captureState.status == CaptureStatus.recording) {
-                    ref
-                        .read(captureControllerProvider.notifier)
-                        .stopRecording();
-                  } else {
-                    ref
-                        .read(captureControllerProvider.notifier)
-                        .startRecording(widget.profileId, widget.sportType);
-                  }
-                },
-                child: Icon(
-                  captureState.status == CaptureStatus.recording
-                      ? Icons.stop
-                      : Icons.circle,
-                  color: captureState.status == CaptureStatus.recording
-                      ? Colors.white
-                      : Colors.red,
+            // Stats
+            Positioned(
+              top: 40,
+              left: isPortrait ? null : 20, // Move to left in landscape?
+              right: isPortrait ? 20 : null, // Or keep at right?
+              // Let's keep it simplish: top-left in landscape to avoid right controls
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                color: Colors.black54,
+                child: Column(
+                  children: [
+                    Text(
+                      'People: ${captureState.poses.length} / ${widget.peopleCount}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      'Objects: ${captureState.objects.length}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    if (captureState.status == CaptureStatus.recording)
+                      const Text(
+                        'REC',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 20),
-              if (captureState.status == CaptureStatus.recording ||
-                  captureState.status == CaptureStatus.paused)
-                FloatingActionButton(
-                  mini: true,
-                  onPressed: () {
-                    if (captureState.status == CaptureStatus.paused) {
-                      ref
-                          .read(captureControllerProvider.notifier)
-                          .resumeRecording();
-                    } else {
-                      ref
-                          .read(captureControllerProvider.notifier)
-                          .pauseRecording();
-                    }
-                  },
-                  child: Icon(
-                    captureState.status == CaptureStatus.paused
-                        ? Icons.play_arrow
-                        : Icons.pause,
-                  ),
-                ),
-            ],
-          ),
-        ),
-
-        // Stats
-        Positioned(
-          top: 40,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.black54,
-            child: Column(
-              children: [
-                Text(
-                  'People: ${captureState.poses.length} / ${widget.peopleCount}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                Text(
-                  'Objects: ${captureState.objects.length}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                if (captureState.status == CaptureStatus.recording)
-                  const Text(
-                    'REC',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-              ],
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildControlButtons(CaptureState captureState) {
+    return [
+      FloatingActionButton(
+        backgroundColor: captureState.status == CaptureStatus.recording
+            ? Colors.red
+            : Colors.white,
+        onPressed: () {
+          if (captureState.status == CaptureStatus.recording) {
+            ref.read(captureControllerProvider.notifier).stopRecording();
+          } else {
+            ref
+                .read(captureControllerProvider.notifier)
+                .startRecording(widget.profileId, widget.sportType);
+          }
+        },
+        child: Icon(
+          captureState.status == CaptureStatus.recording
+              ? Icons.stop
+              : Icons.circle,
+          color: captureState.status == CaptureStatus.recording
+              ? Colors.white
+              : Colors.red,
+        ),
+      ),
+      const SizedBox(width: 20, height: 20),
+      if (captureState.status == CaptureStatus.recording ||
+          captureState.status == CaptureStatus.paused)
+        FloatingActionButton(
+          mini: true,
+          onPressed: () {
+            if (captureState.status == CaptureStatus.paused) {
+              ref.read(captureControllerProvider.notifier).resumeRecording();
+            } else {
+              ref.read(captureControllerProvider.notifier).pauseRecording();
+            }
+          },
+          child: Icon(
+            captureState.status == CaptureStatus.paused
+                ? Icons.play_arrow
+                : Icons.pause,
           ),
         ),
-      ],
-    );
+    ];
   }
 }

@@ -3,7 +3,7 @@ import 'package:camera/camera.dart';
 
 class CameraService {
   CameraController? _controller;
-  int _cameraIndex = 0;
+  final int _cameraIndex = 0;
   List<CameraDescription> _cameras = [];
 
   CameraController? get controller => _controller;

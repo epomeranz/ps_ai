@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
@@ -42,13 +41,37 @@ class MLKitUtils {
     return allBytes.done().buffer.asUint8List();
   }
 
-  static InputImageRotation getRotation(int sensorOrientation) {
-    const rotations = {
-      0: InputImageRotation.rotation0deg,
-      90: InputImageRotation.rotation90deg,
-      180: InputImageRotation.rotation180deg,
-      270: InputImageRotation.rotation270deg,
-    };
-    return rotations[sensorOrientation] ?? InputImageRotation.rotation0deg;
+  static InputImageRotation getRotation(
+    int sensorOrientation,
+    DeviceOrientation deviceOrientation,
+    CameraLensDirection lensDirection,
+  ) {
+    int rotationCompensation = 0;
+
+    switch (deviceOrientation) {
+      case DeviceOrientation.portraitUp:
+        rotationCompensation = 0;
+        break;
+      case DeviceOrientation.landscapeLeft:
+        rotationCompensation = 90;
+        break;
+      case DeviceOrientation.portraitDown:
+        rotationCompensation = 180;
+        break;
+      case DeviceOrientation.landscapeRight:
+        rotationCompensation = 270;
+        break;
+    }
+
+    int rotation;
+    if (lensDirection == CameraLensDirection.front) {
+      rotation = (sensorOrientation + rotationCompensation) % 360;
+    } else {
+      // Back camera
+      rotation = (sensorOrientation - rotationCompensation + 360) % 360;
+    }
+
+    return InputImageRotationValue.fromRawValue(rotation) ??
+        InputImageRotation.rotation0deg;
   }
 }
