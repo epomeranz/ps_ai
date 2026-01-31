@@ -59,7 +59,6 @@ final captureControllerProvider =
 class CaptureController extends Notifier<CaptureState> {
   final _cameraService = CameraService();
   final _mlService = MLService();
-  final _repository = TrackingRepository();
 
   bool _isProcessing = false;
   int _frameCount = 0;
@@ -191,13 +190,18 @@ class CaptureController extends Notifier<CaptureState> {
     state.currentSession!.addFrame(frameData);
   }
 
-  Future<void> startRecording(String profileId, String sportType) async {
+  Future<void> startRecording(
+    String profileId,
+    String sportType,
+    String exerciseType,
+  ) async {
     if (state.status != CaptureStatus.streaming) return;
 
     final session = TrackingSession(
       sessionId: const Uuid().v4(),
       profileId: profileId,
       sportType: sportType,
+      exerciseType: exerciseType,
       startTime: DateTime.now(),
     );
 
@@ -228,7 +232,7 @@ class CaptureController extends Notifier<CaptureState> {
 
       final session = state.currentSession;
       if (session != null) {
-        await _repository.saveSession(session);
+        await ref.read(trackingRepositoryProvider).saveSession(session);
       }
 
       state = state.copyWith(

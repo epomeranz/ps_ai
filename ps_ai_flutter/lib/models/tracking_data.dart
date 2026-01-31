@@ -99,6 +99,7 @@ class TrackingSession {
   final String sessionId;
   final String profileId;
   final String sportType;
+  final String exerciseType;
   final DateTime startTime;
   final List<FrameData> frames;
 
@@ -106,6 +107,7 @@ class TrackingSession {
     required this.sessionId,
     required this.profileId,
     required this.sportType,
+    required this.exerciseType,
     required this.startTime,
     List<FrameData>? frames,
   }) : frames = frames ?? [];
@@ -118,6 +120,7 @@ class TrackingSession {
     'sessionId': sessionId,
     'profileId': profileId,
     'sport': sportType,
+    'exerciseType': exerciseType,
     'startTime': startTime.toIso8601String(),
     'frames': frames.map((f) => f.toJson()).toList(),
   };

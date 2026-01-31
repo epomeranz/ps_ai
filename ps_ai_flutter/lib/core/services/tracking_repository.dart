@@ -1,28 +1,41 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
+import '../providers/firebase_providers.dart';
 
 class TrackingRepository {
-  Future<String> saveSession(TrackingSession session) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filename = 'session_${session.sessionId}_$timestamp.json';
-    final file = File('${directory.path}/$filename');
+  final FirebaseFirestore _firestore;
 
-    final jsonString = jsonEncode(session.toJson());
-    await file.writeAsString(jsonString);
+  TrackingRepository(this._firestore);
 
-    return file.path;
+  Future<void> saveSession(TrackingSession session) async {
+    // Structure: profiles/{profileId}/sports/{sport}/exercises/{exerciseType}/sessions/{sessionId}
+    final docRef = _firestore
+        .collection('profiles')
+        .doc(session.profileId)
+        .collection('sports')
+        .doc(session.sportType)
+        .collection('exercises')
+        .doc(session.exerciseType)
+        .collection('sessions')
+        .doc(session.sessionId);
+
+    await docRef.set(session.toJson());
   }
 
-  Future<List<File>> getSavedSessions() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final files = directory
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.contains('session_'))
-        .toList();
-    return files;
+  /// In the future, this can be updated to fetch from Firestore
+  Future<List<TrackingSession>> getSavedSessions(
+    String profileId,
+    String sport,
+    String exercise,
+  ) async {
+    // In the future, this can be updated to fetch and map from Firestore
+    // final query = await _firestore...
+    return [];
   }
 }
+
+final trackingRepositoryProvider = Provider<TrackingRepository>((ref) {
+  final firestore = ref.watch(firestoreProvider);
+  return TrackingRepository(firestore);
+});

@@ -23,6 +23,7 @@ class TrainShootsScreen extends StatelessWidget {
         ],
         profileId: 'user_123', // TODO: Get from Auth Provider
         sportType: 'basketball',
+        exerciseType: 'shoting_training',
       ),
     );
   }

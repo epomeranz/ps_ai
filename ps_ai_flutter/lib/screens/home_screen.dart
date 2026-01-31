@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'basketball_screen.dart';
+import 'players_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -40,6 +41,21 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text('Players'),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PlayersScreen(),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text('Profile'),

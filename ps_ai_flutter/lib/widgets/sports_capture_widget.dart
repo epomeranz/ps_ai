@@ -11,6 +11,7 @@ class SportsCaptureWidget extends ConsumerStatefulWidget {
   final List<TrackedObjectTypeConfig> objectConfigs;
   final String profileId;
   final String sportType;
+  final String exerciseType;
 
   const SportsCaptureWidget({
     super.key,
@@ -18,6 +19,7 @@ class SportsCaptureWidget extends ConsumerStatefulWidget {
     required this.objectConfigs,
     required this.profileId,
     required this.sportType,
+    required this.exerciseType,
   });
 
   @override
@@ -146,7 +148,11 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
           } else {
             ref
                 .read(captureControllerProvider.notifier)
-                .startRecording(widget.profileId, widget.sportType);
+                .startRecording(
+                  widget.profileId,
+                  widget.sportType,
+                  widget.exerciseType,
+                );
           }
         },
         child: Icon(
