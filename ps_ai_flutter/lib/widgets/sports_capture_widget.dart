@@ -2,6 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:ps_ai_flutter/widgets/capture_controls_widget.dart';
 import 'package:ps_ai_flutter/core/providers/capture_provider.dart';
 import 'package:ps_ai_flutter/core/providers/player_providers.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
@@ -138,51 +139,28 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
     String activePlayerId,
   ) {
     return [
-      FloatingActionButton(
-        backgroundColor: captureState.status == CaptureStatus.recording
-            ? Colors.red
-            : Colors.white,
-        onPressed: () {
-          if (captureState.status == CaptureStatus.recording) {
-            ref.read(captureControllerProvider.notifier).stopRecording();
-          } else {
-            ref
-                .read(captureControllerProvider.notifier)
-                .startRecording(
-                  widget.profileId,
-                  activePlayerId,
-                  widget.sportType,
-                  widget.exerciseType,
-                );
-          }
+      CaptureControlsWidget(
+        status: captureState.status,
+        onRecord: () {
+          ref
+              .read(captureControllerProvider.notifier)
+              .startRecording(
+                widget.profileId,
+                activePlayerId,
+                widget.sportType,
+                widget.exerciseType,
+              );
         },
-        child: Icon(
-          captureState.status == CaptureStatus.recording
-              ? Icons.stop
-              : Icons.circle,
-          color: captureState.status == CaptureStatus.recording
-              ? Colors.white
-              : Colors.red,
-        ),
+        onStop: () {
+          ref.read(captureControllerProvider.notifier).stopRecording();
+        },
+        onPause: () {
+          ref.read(captureControllerProvider.notifier).pauseRecording();
+        },
+        onResume: () {
+          ref.read(captureControllerProvider.notifier).resumeRecording();
+        },
       ),
-      const SizedBox(width: 20, height: 20),
-      if (captureState.status == CaptureStatus.recording ||
-          captureState.status == CaptureStatus.paused)
-        FloatingActionButton(
-          mini: true,
-          onPressed: () {
-            if (captureState.status == CaptureStatus.paused) {
-              ref.read(captureControllerProvider.notifier).resumeRecording();
-            } else {
-              ref.read(captureControllerProvider.notifier).pauseRecording();
-            }
-          },
-          child: Icon(
-            captureState.status == CaptureStatus.paused
-                ? Icons.play_arrow
-                : Icons.pause,
-          ),
-        ),
     ];
   }
 }

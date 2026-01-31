@@ -38,7 +38,6 @@ class _MLResponse {
 
 /// A service that runs MLKit detectors in a background isolate.
 class MLService {
-  Isolate? _isolate;
   SendPort? _sendPort;
   bool _isInitialized = false;
 
@@ -63,7 +62,7 @@ class MLService {
     _receivePort = ReceivePort();
     final rootIsolateToken = RootIsolateToken.instance;
 
-    _isolate = await Isolate.spawn(
+    await Isolate.spawn(
       _isolateEntry,
       _MLCommand(
         type: _MLCommandType.init,
@@ -139,9 +138,8 @@ class MLService {
     _sendPort?.send(
       _IsolateRequestWrapper(-1, _MLCommand(type: _MLCommandType.dispose)),
     );
-    _isolate?.kill();
+    // Do not kill immediately. Let the isolate clean up and kill itself.
     _receivePort?.close();
-    _isolate = null;
     _sendPort = null;
     _isInitialized = false;
     _pendingRequests.clear();
@@ -199,8 +197,8 @@ void _isolateEntry(_MLCommand initCommand) async {
     if (message is _IsolateRequestWrapper) {
       final cmd = message.command;
       if (cmd.type == _MLCommandType.dispose) {
-        poseDetector.close();
-        objectDetector.close();
+        await poseDetector.close();
+        await objectDetector.close();
         Isolate.current.kill();
         break;
       } else if (cmd.type == _MLCommandType.process && cmd.frameData != null) {

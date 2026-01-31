@@ -11,6 +11,7 @@ import '../services/camera_service.dart';
 import '../services/ml_service.dart';
 import '../services/tracking_repository.dart';
 import '../utils/ml_kit_utils.dart';
+import '../../models/exercise_metadata.dart';
 
 enum CaptureStatus { idle, initializing, streaming, recording, paused, error }
 
@@ -31,7 +32,10 @@ class CaptureState {
     this.rotation = InputImageRotation.rotation90deg,
     this.errorMessage,
     this.currentSession,
+    this.referenceMetadata,
   });
+
+  final ExerciseMetadata? referenceMetadata;
 
   CaptureState copyWith({
     CaptureStatus? status,
@@ -41,6 +45,7 @@ class CaptureState {
     InputImageRotation? rotation,
     String? errorMessage,
     TrackingSession? currentSession,
+    ExerciseMetadata? referenceMetadata,
   }) {
     return CaptureState(
       status: status ?? this.status,
@@ -50,6 +55,21 @@ class CaptureState {
       rotation: rotation ?? this.rotation,
       errorMessage: errorMessage ?? this.errorMessage,
       currentSession: currentSession ?? this.currentSession,
+      referenceMetadata: referenceMetadata ?? this.referenceMetadata,
+    );
+  }
+
+  // Helper to clear reference metadata when resetting
+  CaptureState clearReferenceMetadata() {
+     return CaptureState(
+      status: status,
+      cameraController: cameraController,
+      poses: poses,
+      objects: objects,
+      rotation: rotation,
+      errorMessage: errorMessage,
+      currentSession: currentSession,
+      referenceMetadata: null,
     );
   }
 }
@@ -62,12 +82,14 @@ class CaptureController extends Notifier<CaptureState> {
   final _mlService = MLService();
 
   bool _isProcessing = false;
+  bool _isDisposed = false;
   int _frameCount = 0;
 
   @override
   CaptureState build() {
     // Clean up on dispose
     ref.onDispose(() {
+      _isDisposed = true; // Mark as disposed immediately
       _stopAll();
     });
     return CaptureState();
@@ -75,23 +97,41 @@ class CaptureController extends Notifier<CaptureState> {
   
   // Public method to force stop
   Future<void> disposeController() async {
+    // We don't mark as _isDisposed here because we might want to re-initialize 
+    // this same controller instance later if the provider is kept alive.
+    // _isDisposed is strictly for when the Provider is destroyed.
     await _stopAll();
   }
 
   Future<void> _stopAll() async {
-    await _cameraService.stopImageStream();
-    await _cameraService.dispose();
-    await _mlService.dispose();
+    try {
+      if (_cameraService.controller != null && 
+          _cameraService.controller!.value.isStreamingImages) {
+        await _cameraService.stopImageStream();
+      }
+      await _cameraService.dispose();
+      await _mlService.dispose();
+    } catch (e) {
+      debugPrint('Error stopping capture services: $e');
+    }
     
     // Reset state to ensure we don't hold onto a disposed controller
-    state = CaptureState(); 
+    // We only update state if the provider itself is not explicitly disposed by Riverpod
+    // (i.e., we are manually resetting via disposeController)
+    if (!_isDisposed) {
+       state = CaptureState(); 
+    }
   }
 
   Future<void> initialize() async {
+    if (_isDisposed) return;
+    
     state = state.copyWith(status: CaptureStatus.initializing);
     try {
       await _cameraService.initialize();
       await _mlService.initialize();
+
+      if (_isDisposed) return;
 
       state = state.copyWith(
         status: CaptureStatus.streaming,
@@ -100,6 +140,7 @@ class CaptureController extends Notifier<CaptureState> {
 
       _startStream();
     } catch (e) {
+      if (_isDisposed) return;
       state = state.copyWith(
         status: CaptureStatus.error,
         errorMessage: e.toString(),
@@ -108,13 +149,15 @@ class CaptureController extends Notifier<CaptureState> {
   }
 
   void _startStream() {
+    if (_isDisposed) return;
     _cameraService.startImageStream((image) {
+      if (_isDisposed) return;
       _processFrame(image);
     });
   }
 
   Future<void> _processFrame(CameraImage image) async {
-    if (_isProcessing) return; // Drop frame if busy
+    if (_isProcessing || _isDisposed) return; // Drop frame if busy or disposed
     if (state.status != CaptureStatus.streaming &&
         state.status != CaptureStatus.recording) {
       return;
@@ -124,6 +167,7 @@ class CaptureController extends Notifier<CaptureState> {
     _frameCount++;
 
     try {
+      if (_isDisposed) return;
       final camera = _cameraService.controller!.description;
       final deviceOrientation =
           _cameraService.controller!.value.deviceOrientation;
@@ -146,8 +190,9 @@ class CaptureController extends Notifier<CaptureState> {
       }
 
       // Process in isolate
-      // Process objects every 3rd frame
-      final bool shouldDetectObjects = _frameCount % 3 == 0;
+      // Process objects every 3rd frame, BUT ONLY IF NOT REFERENCE SESSION
+      final bool isReference = state.referenceMetadata != null;
+      final bool shouldDetectObjects = !isReference && (_frameCount % 3 == 0);
       
       final result = await _mlService.processFrame(
         frameData, 
@@ -225,6 +270,29 @@ class CaptureController extends Notifier<CaptureState> {
     state = state.copyWith(
       status: CaptureStatus.recording,
       currentSession: session,
+      referenceMetadata: null, // Ensure normal recording logic
+    );
+  }
+
+  Future<void> startReferenceRecording(
+    ExerciseMetadata metadata,
+    String profileId,
+  ) async {
+     if (state.status != CaptureStatus.streaming) return;
+
+    final session = TrackingSession(
+      sessionId: const Uuid().v4(),
+      profileId: profileId,
+      activePlayerId: 'reference', // or create a 'standard' player ID
+      sportType: metadata.sportType,
+      exerciseType: metadata.id, // ID is likely consistent
+      startTime: DateTime.now(),
+    );
+
+    state = state.copyWith(
+      status: CaptureStatus.recording,
+      currentSession: session,
+      referenceMetadata: metadata,
     );
   }
 
@@ -247,13 +315,22 @@ class CaptureController extends Notifier<CaptureState> {
 
       final session = state.currentSession;
       if (session != null) {
-        await ref.read(trackingRepositoryProvider).saveSession(session);
+        if (state.referenceMetadata != null) {
+            await ref.read(trackingRepositoryProvider).saveReferenceExercise(
+              session, 
+              state.referenceMetadata!,
+            );
+        } else {
+            await ref.read(trackingRepositoryProvider).saveSession(session);
+        }
       }
 
-      state = state.copyWith(
+      state = CaptureState(
         status: CaptureStatus.streaming,
-        currentSession: null, // Reset session
-      );
+        cameraController: state.cameraController,
+        rotation: state.rotation,
+        // Keep other config potentially? No, basic reset to streaming.
+      ); 
     }
   }
 }
