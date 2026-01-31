@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ps_ai_flutter/models/tracking_data.dart';
+import 'package:ps_ai_flutter/widgets/sports_capture_widget.dart';
 
 class TrainShootsScreen extends StatelessWidget {
   const TrainShootsScreen({super.key});
@@ -8,13 +10,19 @@ class TrainShootsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Train Shoots'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
       ),
-      body: const Center(
-        child: Text('Train Shoots Page (Empty)'),
+      body: SportsCaptureWidget(
+        peopleCount: 1, // Default to 1 person
+        objectConfigs: [
+          TrackedObjectTypeConfig(
+            label: 'Ball',
+            expectedCount: 1,
+          ), // Default to 1 ball
+        ],
+        profileId: 'user_123', // TODO: Get from Auth Provider
+        sportType: 'basketball',
       ),
     );
   }
