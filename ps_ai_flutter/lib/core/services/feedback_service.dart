@@ -1,89 +1,68 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import '../providers/capture_provider.dart';
+import '../../models/analysis_data.dart';
+import '../analysis/sport_analyzer.dart';
+import '../analysis/basketball_analyzer.dart';
 
-class FeedbackState {
-  final double score; // 0.0 to 1.0
-  final Color indicatorColor;
-  final String message;
-  final String? animationEvent; // e.g., "congrats", "heart"
-
-  const FeedbackState({
-    required this.score,
-    required this.indicatorColor,
-    required this.message,
-    this.animationEvent,
-  });
-
-  factory FeedbackState.initial() {
-    return const FeedbackState(
-      score: 0.0,
-      indicatorColor: Colors.grey,
-      message: 'Get ready...',
-    );
-  }
-}
+// Re-export specific feedback types for consumers
+export '../../models/analysis_data.dart';
 
 class FeedbackService {
-  final StreamController<FeedbackState> _controller =
-      StreamController<FeedbackState>.broadcast();
+  final StreamController<AnalysisInput> _inputController =
+      StreamController<AnalysisInput>.broadcast();
+  SportAnalyzer? _currentAnalyzer;
+  StreamSubscription? _analyzerSubscription;
 
-  Stream<FeedbackState> get feedbackStream => _controller.stream;
+  // Main output stream
+  final StreamController<FeedbackOutput> _outputController =
+      StreamController<FeedbackOutput>.broadcast();
+  Stream<FeedbackOutput> get feedbackStream => _outputController.stream;
+
+  FeedbackService() {
+    _initializeAnalyzer('basketball', 'shooting'); // Default or dynamic
+  }
+
+  void _initializeAnalyzer(String sportType, String exerciseType) {
+    _analyzerSubscription?.cancel();
+    _currentAnalyzer?.dispose();
+
+    // Factory logic
+    if (sportType == 'basketball') {
+      _currentAnalyzer = BasketballShootingAnalyzer();
+    } else {
+      // Fallback or generic analyzer
+      // _currentAnalyzer = GenericAnalyzer();
+      // For now, let's just stick with one or throw/log.
+      _currentAnalyzer = BasketballShootingAnalyzer();
+    }
+
+    // Connect pipelines
+    if (_currentAnalyzer != null) {
+      _analyzerSubscription = _currentAnalyzer!
+          .analyze(_inputController.stream)
+          .listen((output) {
+            _outputController.add(output);
+          });
+    }
+  }
 
   void analyzeFrame(CaptureState captureState) {
-    if (captureState.status != CaptureStatus.recording) {
-      // Emit idle state if needed, or just return
-      return;
-    }
+    if (captureState.status != CaptureStatus.recording) return;
 
-    // Simplified analysis logic for demo purposes
-    // In a real app, this would involve complex ML heuristics
-
-    double score = 0.0;
-    Color color = Colors.red;
-    String message = "Keep going!";
-    String? animation;
-
-    if (captureState.poses.isNotEmpty) {
-      // Mock logic: calculate score based on pose visibility confidence
-      final pose = captureState.poses.first;
-      final confidence =
-          pose.landmarks.values
-              .map((l) => l.likelihood)
-              .reduce((a, b) => a + b) /
-          pose.landmarks.length;
-
-      score = confidence;
-
-      if (score > 0.8) {
-        color = Colors.green;
-        message = "Excellent form!";
-        if (DateTime.now().second % 10 == 0) {
-          // Occasional animation
-          animation = "congrats";
-        }
-      } else if (score > 0.5) {
-        color = Colors.yellow;
-        message = "Good, keep stabilizing.";
-      } else {
-        color = Colors.red;
-        message = "Adjust your position.";
-      }
-    } else {
-      message = "No person detected.";
-    }
-
-    _controller.add(
-      FeedbackState(
-        score: score,
-        indicatorColor: color,
-        message: message,
-        animationEvent: animation,
-      ),
+    // Convert CaptureState to AnalysisInput
+    final input = LiveAnalysisInput(
+      poses: captureState.poses,
+      objects: captureState.objects,
+      session: captureState.currentSession!,
     );
+
+    _inputController.add(input);
   }
 
   void dispose() {
-    _controller.close();
+    _analyzerSubscription?.cancel();
+    _currentAnalyzer?.dispose();
+    _inputController.close();
+    _outputController.close();
   }
 }

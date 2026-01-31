@@ -8,7 +8,7 @@ final feedbackServiceProvider = Provider<FeedbackService>((ref) {
   return service;
 });
 
-final feedbackStreamProvider = StreamProvider<FeedbackState>((ref) {
+final feedbackStreamProvider = StreamProvider<FeedbackOutput>((ref) {
   final service = ref.watch(feedbackServiceProvider);
 
   // Listen to capture state changes to drive analysis

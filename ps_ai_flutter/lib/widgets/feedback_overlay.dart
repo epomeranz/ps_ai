@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/capture_provider.dart';
 import '../core/providers/feedback_provider.dart';
+import '../models/analysis_data.dart';
 
 class FeedbackOverlay extends ConsumerStatefulWidget {
   final int peopleCount;
@@ -190,9 +191,42 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
-                          maxLines: 3,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+
+                        // Specialized Feedback (Basketball)
+                        if (feedback is BasketballShootingFeedback) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (feedback.releaseAngle != null)
+                                  Text(
+                                    'Angle: ${feedback.releaseAngle!.toStringAsFixed(1)}°',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                if (feedback.shotArc != null)
+                                  Text(
+                                    'Arc: ${feedback.shotArc!.toStringAsFixed(1)}°',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     );
                   },
