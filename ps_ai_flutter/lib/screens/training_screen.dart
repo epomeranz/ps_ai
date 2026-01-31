@@ -6,12 +6,12 @@ import 'package:ps_ai_flutter/core/providers/player_providers.dart';
 import 'package:ps_ai_flutter/core/providers/firebase_providers.dart';
 import 'package:ps_ai_flutter/core/providers/feedback_provider.dart';
 
-class GymTrainingScreen extends ConsumerStatefulWidget {
+class TrainingScreen extends ConsumerStatefulWidget {
   final String sportType;
   final String exerciseType;
   final Color baseColor;
 
-  const GymTrainingScreen({
+  const TrainingScreen({
     super.key,
     required this.sportType,
     required this.exerciseType,
@@ -19,10 +19,10 @@ class GymTrainingScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<GymTrainingScreen> createState() => _GymTrainingScreenState();
+  ConsumerState<TrainingScreen> createState() => _GymTrainingScreenState();
 }
 
-class _GymTrainingScreenState extends ConsumerState<GymTrainingScreen> {
+class _GymTrainingScreenState extends ConsumerState<TrainingScreen> {
   @override
   void initState() {
     super.initState();

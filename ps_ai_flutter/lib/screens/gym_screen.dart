@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'gym_training_screen.dart';
+import 'training_screen.dart';
 import 'dashboard_screen.dart';
 
 class GymScreen extends StatelessWidget {
@@ -78,7 +78,7 @@ class GymScreen extends StatelessWidget {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const GymTrainingScreen(
+            builder: (context) => const TrainingScreen(
               sportType: 'gym',
               exerciseType: 'Squat',
               baseColor: Colors.green,

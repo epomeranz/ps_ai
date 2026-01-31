@@ -10,15 +10,10 @@ class SquatAnalyzer extends SportAnalyzer {
 
   final String exerciseType;
   final Color baseColor;
-  DateTime? _startTime;
-  bool _instructionShown = false;
-
   SquatAnalyzer({
     required this.exerciseType,
     required this.baseColor,
-  }) {
-    _startTime = DateTime.now();
-  }
+  });
 
   @override
   Stream<FeedbackOutput> analyze(Stream<AnalysisInput> input) {
@@ -33,25 +28,6 @@ class SquatAnalyzer extends SportAnalyzer {
 
   void _analyzeFrame(LiveAnalysisInput input) {
     if (_outputController.isClosed) return;
-
-    // Initial Instruction Phase
-    if (!_instructionShown) {
-      final elapsed = DateTime.now().difference(_startTime!);
-      if (elapsed.inSeconds < 3) {
-        _outputController.add(
-          GymFeedback(
-            score: 0.0,
-            indicatorColor: baseColor,
-            message: "Face the camera", // Generic instruction
-            exerciseType: exerciseType,
-            phase: "Setup",
-          ),
-        );
-        return;
-      } else {
-        _instructionShown = true;
-      }
-    }
 
     // Determine if we have a person
     if (input.poses.isEmpty) {

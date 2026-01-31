@@ -42,8 +42,9 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
   }
 
   void _triggerAnimation(String event) {
-    if (_lastAnimationEvent == event && _animationController.isAnimating)
+    if (_lastAnimationEvent == event && _animationController.isAnimating) {
       return;
+    }
 
     setState(() {
       _lastAnimationEvent = event;

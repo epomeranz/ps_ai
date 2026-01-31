@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../providers/capture_provider.dart';
 import '../../models/analysis_data.dart';
+import '../../models/tracking_data.dart';
 import '../analysis/sport_analyzer.dart';
 import '../analysis/basketball_analyzer.dart';
 import '../analysis/squat_analyzer.dart';
@@ -60,13 +61,26 @@ class FeedbackService {
   }
 
   void analyzeFrame(CaptureState captureState) {
-    if (captureState.status != CaptureStatus.recording) return;
+    if (captureState.status != CaptureStatus.recording &&
+        captureState.status != CaptureStatus.streaming) {
+      return;
+    }
 
     // Convert CaptureState to AnalysisInput
     final input = LiveAnalysisInput(
       poses: captureState.poses,
       objects: captureState.objects,
-      session: captureState.currentSession!,
+      session:
+          captureState.currentSession ??
+          TrackingSession(
+            // Dummy session for streaming analysis
+            sessionId: 'preview',
+            profileId: 'preview',
+            activePlayerId: 'preview',
+            sportType: 'unknown',
+            exerciseType: 'unknown',
+            startTime: DateTime.now(),
+          ),
     );
 
     _inputController.add(input);

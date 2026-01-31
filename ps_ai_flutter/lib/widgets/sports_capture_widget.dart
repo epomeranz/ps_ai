@@ -7,6 +7,7 @@ import 'package:ps_ai_flutter/core/providers/player_providers.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
 import 'package:ps_ai_flutter/widgets/feedback_overlay.dart';
 import 'package:ps_ai_flutter/widgets/tracking_overlay_painter.dart';
+import 'package:ps_ai_flutter/widgets/instruction_overlay.dart';
 
 class SportsCaptureWidget extends ConsumerStatefulWidget {
   final int peopleCount;
@@ -30,6 +31,14 @@ class SportsCaptureWidget extends ConsumerStatefulWidget {
 }
 
 class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
+  @override
+  void dispose() {
+    // Manually stop the capture controller since the provider is kept alive
+    // This fixes the "camera always running" issue
+    ref.read(captureControllerProvider.notifier).disposeController();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -106,7 +115,13 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
             ),
 
             // Stats
-            // Feedback Overlay
+            // Instruction Overlay (Big, Center)
+            InstructionOverlay(
+              sportType: widget.sportType,
+              exerciseType: widget.exerciseType,
+            ),
+
+            // Feedback Overlay (Top Right, Small)
             FeedbackOverlay(peopleCount: widget.peopleCount),
           ],
         );
