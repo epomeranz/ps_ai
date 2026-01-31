@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ps_ai_flutter/core/providers/capture_provider.dart';
 import 'package:ps_ai_flutter/core/providers/player_providers.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
+import 'package:ps_ai_flutter/widgets/feedback_overlay.dart';
 import 'package:ps_ai_flutter/widgets/tracking_overlay_painter.dart';
 
 class SportsCaptureWidget extends ConsumerStatefulWidget {
@@ -105,35 +106,8 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
             ),
 
             // Stats
-            Positioned(
-              top: 40,
-              left: isPortrait ? null : 20,
-              right: isPortrait ? 20 : null,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                color: Colors.black54,
-                child: Column(
-                  children: [
-                    Text(
-                      'People: ${captureState.poses.length} / ${widget.peopleCount}',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    Text(
-                      'Objects: ${captureState.objects.length}',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    if (captureState.status == CaptureStatus.recording)
-                      const Text(
-                        'REC',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+            // Feedback Overlay
+            FeedbackOverlay(peopleCount: widget.peopleCount),
           ],
         );
       },
