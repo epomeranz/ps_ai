@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
 import 'package:ps_ai_flutter/widgets/sports_capture_widget.dart';
 import 'package:ps_ai_flutter/core/providers/player_providers.dart';
+import 'package:ps_ai_flutter/core/providers/firebase_providers.dart';
 
 class TrainShootsScreen extends ConsumerWidget {
   const TrainShootsScreen({super.key});
@@ -12,11 +13,13 @@ class TrainShootsScreen extends ConsumerWidget {
     const sportType = 'basketball';
     final playersAsync = ref.watch(playersStreamProvider);
     final activePlayerIdAsync = ref.watch(activePlayerProvider(sportType));
+    final userAsync = ref.watch(authStateChangesProvider);
+    final profileId = userAsync.value?.uid ?? 'anonymous';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Train Shoots'),
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.orange.shade800,
         foregroundColor: Colors.white,
         actions: [
           playersAsync.when(
@@ -63,7 +66,7 @@ class TrainShootsScreen extends ConsumerWidget {
             expectedCount: 1,
           ), // Default to 1 ball
         ],
-        profileId: 'user_123',
+        profileId: profileId,
         sportType: sportType,
         exerciseType: 'shoting_training',
       ),

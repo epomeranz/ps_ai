@@ -11,6 +11,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.blue.shade400,
+
         title: const Text('PS AI Sports'),
         centerTitle: true,
       ),
