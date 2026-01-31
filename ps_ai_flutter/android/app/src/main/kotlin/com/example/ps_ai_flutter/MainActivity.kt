@@ -1,4 +1,4 @@
-package com.example.ps_ai_flutter
+package com.perfectswish.psai
 
 import io.flutter.embedding.android.FlutterActivity
 

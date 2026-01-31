@@ -1,0 +1,40 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ps_ai_client",
+      "cwd": "ps_ai_client",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "ps_ai_flutter",
+      "cwd": "ps_ai_flutter",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "ps_ai_flutter (profile mode)",
+      "cwd": "ps_ai_flutter",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "ps_ai_flutter (release mode)",
+      "cwd": "ps_ai_flutter",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    },
+    {
+      "name": "ps_ai_server",
+      "cwd": "ps_ai_server",
+      "request": "launch",
+      "type": "dart"
+    }
+  ]
+}

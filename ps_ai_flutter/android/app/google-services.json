@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "985896803973",
+    "project_id": "perfectswish-ai",
+    "storage_bucket": "perfectswish-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985896803973:android:9b66b533a130f6afdf13ec",
+        "android_client_info": {
+          "package_name": "com.perfectswish.psai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBPDmhbBJAeevzQhl-Fp-gtjs9MDLkCMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
