@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ps_ai_flutter/screens/gym_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'basketball_screen.dart';
@@ -118,10 +119,24 @@ class HomeScreen extends StatelessWidget {
                   ),
                   _buildSportCard(
                     context,
+                    title: 'In the Gym',
+                    subtitle: 'Train your body',
+                    icon: Icons.fitness_center,
+                    color: Colors.green,
+                    isEnabled: true,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GymScreen(),
+                      ),
+                    ),
+                  ),
+                  _buildSportCard(
+                    context,
                     title: 'Football',
                     subtitle: 'Coming Soon',
                     icon: Icons.sports_soccer,
-                    color: Colors.green,
+                    color: Colors.amber,
                     isEnabled: false,
                   ),
                   _buildSportCard(

@@ -63,3 +63,20 @@ class BasketballShootingFeedback extends FeedbackOutput {
     this.shotArc,
   });
 }
+
+/// Specialized feedback for Gym Exercises (Squats, Curls, etc.)
+class GymFeedback extends FeedbackOutput {
+  final String exerciseType;
+  final int? reps;
+  final String? phase; // e.g. "Descending", "Ascending"
+
+  const GymFeedback({
+    required super.score,
+    required super.indicatorColor,
+    required super.message,
+    super.animationEvent,
+    required this.exerciseType,
+    this.reps,
+    this.phase,
+  });
+}

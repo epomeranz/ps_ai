@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import '../providers/capture_provider.dart';
 import '../../models/analysis_data.dart';
 import '../analysis/sport_analyzer.dart';
 import '../analysis/basketball_analyzer.dart';
+import '../analysis/squat_analyzer.dart';
 
 // Re-export specific feedback types for consumers
 export '../../models/analysis_data.dart';
@@ -19,21 +21,32 @@ class FeedbackService {
   Stream<FeedbackOutput> get feedbackStream => _outputController.stream;
 
   FeedbackService() {
-    _initializeAnalyzer('basketball', 'shooting'); // Default or dynamic
+    setAnalyzerConfig('basketball', 'shooting', Colors.orange); // Default
   }
 
-  void _initializeAnalyzer(String sportType, String exerciseType) {
+  void setAnalyzerConfig(
+    String sportType,
+    String exerciseType,
+    Color baseColor,
+  ) {
     _analyzerSubscription?.cancel();
     _currentAnalyzer?.dispose();
 
     // Factory logic
     if (sportType == 'basketball') {
       _currentAnalyzer = BasketballShootingAnalyzer();
+    } else if (sportType == 'gym') {
+      _currentAnalyzer = SquatAnalyzer(
+        exerciseType: exerciseType,
+        baseColor: baseColor,
+      );
     } else {
-      // Fallback or generic analyzer
-      // _currentAnalyzer = GenericAnalyzer();
-      // For now, let's just stick with one or throw/log.
-      _currentAnalyzer = BasketballShootingAnalyzer();
+      // Fallback to generic squat/gym analyzer if unknown, or maybe a truly generic one
+      // For now, assuming gym/squat as fallback for this context
+      _currentAnalyzer = SquatAnalyzer(
+        exerciseType: exerciseType,
+        baseColor: baseColor,
+      );
     }
 
     // Connect pipelines

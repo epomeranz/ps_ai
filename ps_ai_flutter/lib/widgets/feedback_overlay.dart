@@ -73,10 +73,10 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -135,9 +135,9 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
                             borderRadius: BorderRadius.circular(3),
                             gradient: LinearGradient(
                               colors: [
-                                Colors.red.withOpacity(0.5),
-                                Colors.yellow.withOpacity(0.5),
-                                Colors.green.withOpacity(0.5),
+                                Colors.red.withValues(alpha: 0.5),
+                                Colors.yellow.withValues(alpha: 0.5),
+                                Colors.green.withValues(alpha: 0.5),
                               ],
                             ),
                           ),
@@ -158,8 +158,8 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: feedback.indicatorColor.withOpacity(
-                                      0.5,
+                                    color: feedback.indicatorColor.withValues(
+                                      alpha: 0.5,
                                     ),
                                     blurRadius: 4,
                                     spreadRadius: 2,
@@ -227,6 +227,40 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
                             ),
                           ),
                         ],
+
+                        // Specialized Feedback (Gym)
+                        if (feedback is GymFeedback) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (feedback.phase != null)
+                                  Text(
+                                    'Phase: ${feedback.phase}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                if (feedback.reps != null)
+                                  Text(
+                                    'Reps: ${feedback.reps}',
+                                    style: const TextStyle(
+                                      color: Colors.white, // Emphasize reps
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     );
                   },
@@ -234,7 +268,7 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
                     'Initializing analysis...',
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
-                  error: (_, __) => const Text(
+                  error: (_, _) => const Text(
                     'Analysis unavailable',
                     style: TextStyle(color: Colors.redAccent, fontSize: 12),
                   ),

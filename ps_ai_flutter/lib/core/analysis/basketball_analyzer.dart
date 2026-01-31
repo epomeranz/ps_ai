@@ -6,10 +6,11 @@ import 'sport_analyzer.dart';
 class BasketballShootingAnalyzer extends SportAnalyzer {
   final StreamController<FeedbackOutput> _outputController =
       StreamController<FeedbackOutput>.broadcast();
+  StreamSubscription? _inputSubscription;
 
   @override
   Stream<FeedbackOutput> analyze(Stream<AnalysisInput> input) {
-    input.listen((data) {
+    _inputSubscription = input.listen((data) {
       if (data is LiveAnalysisInput) {
         _analyzeFrame(data);
       }
@@ -19,6 +20,8 @@ class BasketballShootingAnalyzer extends SportAnalyzer {
   }
 
   void _analyzeFrame(LiveAnalysisInput input) {
+    if (_outputController.isClosed) return;
+
     // Determine if we have a person
     if (input.poses.isEmpty) {
       _outputController.add(
@@ -58,20 +61,23 @@ class BasketballShootingAnalyzer extends SportAnalyzer {
       message = "Square your shoulders";
     }
 
-    _outputController.add(
-      BasketballShootingFeedback(
-        score: score,
-        indicatorColor: color,
-        message: message,
-        animationEvent: animation,
-        releaseAngle: 45.0, // Mock data
-        shotArc: 55.0, // Mock data
-      ),
-    );
+    if (!_outputController.isClosed) {
+      _outputController.add(
+        BasketballShootingFeedback(
+          score: score,
+          indicatorColor: color,
+          message: message,
+          animationEvent: animation,
+          releaseAngle: 45.0, // Mock data
+          shotArc: 55.0, // Mock data
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _inputSubscription?.cancel();
     _outputController.close();
     super.dispose();
   }
