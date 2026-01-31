@@ -12,18 +12,19 @@ class MLKitUtils {
     // get image format
     final format = InputImageFormatValue.fromRawValue(image.format.raw);
     // validate format depending on platform
-    // On Android, the camera returns YUV_420_888 which maps to NV21 logic in MLKit often
-    // On iOS, it returns BGRA8888 usually
     if (format == null) return null;
 
     final plane = image.planes.first;
 
-    // Since we can't easily access all planes in a unified way without more boilerplate,
-    // we use the bytes directly.
-    // Note: This is simplified.
+    final planeDataList = image.planes.map((p) => PlaneData(
+      bytes: p.bytes,
+      bytesPerRow: p.bytesPerRow,
+      height: p.height,
+      width: p.width,
+    )).toList();
 
     return InputImage.fromBytes(
-      bytes: _concatenatePlanes(image.planes),
+      bytes: concatenatePlanes(planeDataList),
       metadata: InputImageMetadata(
         size: Size(image.width.toDouble(), image.height.toDouble()),
         rotation: rotation, // We need to calculate this outside
@@ -33,9 +34,47 @@ class MLKitUtils {
     );
   }
 
-  static Uint8List _concatenatePlanes(List<Plane> planes) {
+  static FrameDataFromCameraImage? extractFrameData(
+    CameraImage image,
+    CameraDescription camera,
+    InputImageRotation rotation,
+  ) {
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (format == null) return null;
+
+    final planes = image.planes.map((p) {
+      return PlaneData(
+        bytes: p.bytes,
+        bytesPerRow: p.bytesPerRow,
+        height: p.height,
+        width: p.width,
+      );
+    }).toList();
+
+    return FrameDataFromCameraImage(
+      planes: planes,
+      size: Size(image.width.toDouble(), image.height.toDouble()),
+      rotation: rotation,
+      format: format,
+      bytesPerRow: image.planes.first.bytesPerRow,
+    );
+  }
+
+  static InputImage? inputImageFromFrameData(FrameDataFromCameraImage data) {
+    return InputImage.fromBytes(
+      bytes: concatenatePlanes(data.planes),
+      metadata: InputImageMetadata(
+        size: data.size,
+        rotation: data.rotation,
+        format: data.format,
+        bytesPerRow: data.bytesPerRow,
+      ),
+    );
+  }
+
+  static Uint8List concatenatePlanes(List<PlaneData> planes) {
     final WriteBuffer allBytes = WriteBuffer();
-    for (final Plane plane in planes) {
+    for (final PlaneData plane in planes) {
       allBytes.putUint8List(plane.bytes);
     }
     return allBytes.done().buffer.asUint8List();
@@ -74,4 +113,34 @@ class MLKitUtils {
     return InputImageRotationValue.fromRawValue(rotation) ??
         InputImageRotation.rotation0deg;
   }
+}
+
+class PlaneData {
+  final Uint8List bytes;
+  final int bytesPerRow;
+  final int? height;
+  final int? width;
+
+  PlaneData({
+    required this.bytes,
+    required this.bytesPerRow,
+    this.height,
+    this.width,
+  });
+}
+
+class FrameDataFromCameraImage {
+  final List<PlaneData> planes;
+  final Size size;
+  final InputImageRotation rotation;
+  final InputImageFormat format;
+  final int bytesPerRow;
+
+  FrameDataFromCameraImage({
+    required this.planes,
+    required this.size,
+    required this.rotation,
+    required this.format,
+    required this.bytesPerRow,
+  });
 }

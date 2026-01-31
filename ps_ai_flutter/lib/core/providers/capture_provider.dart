@@ -133,29 +133,33 @@ class CaptureController extends Notifier<CaptureState> {
         camera.lensDirection,
       );
 
-      final inputImage = MLKitUtils.inputImageFromCameraImage(
+      // Extract raw data for isolate transfer (lightweight)
+      final frameData = MLKitUtils.extractFrameData(
         image,
         camera,
         rotation,
       );
 
-      if (inputImage == null) {
+      if (frameData == null) {
         _isProcessing = false;
         return;
       }
 
-      // Always process pose
-      final poses = await _mlService.processPose(inputImage);
-
-      // Process objects every 3rd frame to save resources
-      List<DetectedObject> objects = state.objects;
-      if (_frameCount % 3 == 0) {
-        objects = await _mlService.processObjects(inputImage);
-      }
+      // Process in isolate
+      // Process objects every 3rd frame
+      final bool shouldDetectObjects = _frameCount % 3 == 0;
+      
+      final result = await _mlService.processFrame(
+        frameData, 
+        detectObjects: shouldDetectObjects,
+      );
 
       // Update UI state with rotation
+      // Use existing objects if not detected this frame
+      final objects = shouldDetectObjects ? result.objects : state.objects;
+      
       state = state.copyWith(
-        poses: poses,
+        poses: result.poses,
         objects: objects,
         rotation: rotation,
       );
@@ -163,7 +167,7 @@ class CaptureController extends Notifier<CaptureState> {
       // Save data if recording
       if (state.status == CaptureStatus.recording &&
           state.currentSession != null) {
-        _recordFrameData(poses, objects);
+        _recordFrameData(result.poses, objects);
       }
     } catch (e) {
       debugPrint("Error processing frame: $e");
