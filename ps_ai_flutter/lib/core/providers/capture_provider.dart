@@ -192,6 +192,7 @@ class CaptureController extends Notifier<CaptureState> {
 
   Future<void> startRecording(
     String profileId,
+    String activePlayerId,
     String sportType,
     String exerciseType,
   ) async {
@@ -200,6 +201,7 @@ class CaptureController extends Notifier<CaptureState> {
     final session = TrackingSession(
       sessionId: const Uuid().v4(),
       profileId: profileId,
+      activePlayerId: activePlayerId,
       sportType: sportType,
       exerciseType: exerciseType,
       startTime: DateTime.now(),

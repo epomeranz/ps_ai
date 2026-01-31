@@ -63,7 +63,7 @@ class TrainShootsScreen extends ConsumerWidget {
             expectedCount: 1,
           ), // Default to 1 ball
         ],
-        profileId: activePlayerIdAsync.value ?? 'user_123',
+        profileId: 'user_123',
         sportType: sportType,
         exerciseType: 'shoting_training',
       ),

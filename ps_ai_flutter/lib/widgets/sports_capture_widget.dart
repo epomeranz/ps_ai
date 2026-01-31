@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:ps_ai_flutter/core/providers/capture_provider.dart';
+import 'package:ps_ai_flutter/core/providers/player_providers.dart';
 import 'package:ps_ai_flutter/models/tracking_data.dart';
 import 'package:ps_ai_flutter/widgets/tracking_overlay_painter.dart';
 
@@ -40,6 +41,10 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
   @override
   Widget build(BuildContext context) {
     final captureState = ref.watch(captureControllerProvider);
+    final activePlayerIdAsync = ref.watch(
+      activePlayerProvider(widget.sportType),
+    );
+    final activePlayerId = activePlayerIdAsync.value ?? 'unknown_player';
 
     if (captureState.status == CaptureStatus.initializing) {
       return const Center(child: CircularProgressIndicator());
@@ -54,18 +59,12 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
       return const Center(child: Text('Camera not ready'));
     }
 
-    // final size = MediaQuery.of(context).size;
-    // Calculate scaling to ensure overlay matches camera preview
-    // This is simplified; robust implementations handling aspect ratio are more verbose.
-    // Assuming full screen or fitted container.
-
     return OrientationBuilder(
       builder: (context, orientation) {
         final isPortrait = orientation == Orientation.portrait;
         return Stack(
           children: [
             // Camera Preview
-            // TODO: Ensure preview fills the screen correctly in both orientations
             Center(child: CameraPreview(captureState.cameraController!)),
 
             // Tracking Overlay
@@ -91,20 +90,25 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
               child: isPortrait
                   ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: _buildControlButtons(captureState),
+                      children: _buildControlButtons(
+                        captureState,
+                        activePlayerId,
+                      ),
                     )
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: _buildControlButtons(captureState),
+                      children: _buildControlButtons(
+                        captureState,
+                        activePlayerId,
+                      ),
                     ),
             ),
 
             // Stats
             Positioned(
               top: 40,
-              left: isPortrait ? null : 20, // Move to left in landscape?
-              right: isPortrait ? 20 : null, // Or keep at right?
-              // Let's keep it simplish: top-left in landscape to avoid right controls
+              left: isPortrait ? null : 20,
+              right: isPortrait ? 20 : null,
               child: Container(
                 padding: const EdgeInsets.all(8),
                 color: Colors.black54,
@@ -136,7 +140,10 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
     );
   }
 
-  List<Widget> _buildControlButtons(CaptureState captureState) {
+  List<Widget> _buildControlButtons(
+    CaptureState captureState,
+    String activePlayerId,
+  ) {
     return [
       FloatingActionButton(
         backgroundColor: captureState.status == CaptureStatus.recording
@@ -150,6 +157,7 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
                 .read(captureControllerProvider.notifier)
                 .startRecording(
                   widget.profileId,
+                  activePlayerId,
                   widget.sportType,
                   widget.exerciseType,
                 );

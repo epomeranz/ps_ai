@@ -15,6 +15,8 @@ class TrackingRepository {
         .doc(session.profileId)
         .collection('sports')
         .doc(session.sportType)
+        .collection('players')
+        .doc(session.activePlayerId)
         .collection('exercises')
         .doc(session.exerciseType)
         .collection('sessions')

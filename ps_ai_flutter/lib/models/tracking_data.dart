@@ -58,7 +58,7 @@ class TrackedPerson {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'landmarks': landmarks,
+    'landmarks': landmarks.map((k, v) => MapEntry(k.toString(), v)),
   };
 
   static TrackedPerson fromPose(Pose pose, {int? id}) {
@@ -98,6 +98,7 @@ class FrameData {
 class TrackingSession {
   final String sessionId;
   final String profileId;
+  final String activePlayerId;
   final String sportType;
   final String exerciseType;
   final DateTime startTime;
@@ -106,6 +107,7 @@ class TrackingSession {
   TrackingSession({
     required this.sessionId,
     required this.profileId,
+    required this.activePlayerId,
     required this.sportType,
     required this.exerciseType,
     required this.startTime,
@@ -119,6 +121,7 @@ class TrackingSession {
   Map<String, dynamic> toJson() => {
     'sessionId': sessionId,
     'profileId': profileId,
+    'activePlayerId': activePlayerId,
     'sport': sportType,
     'exerciseType': exerciseType,
     'startTime': startTime.toIso8601String(),
