@@ -31,21 +31,25 @@ class SportsCaptureWidget extends ConsumerStatefulWidget {
 }
 
 class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
-  @override
-  void dispose() {
-    // Manually stop the capture controller since the provider is kept alive
-    // This fixes the "camera always running" issue
-    ref.read(captureControllerProvider.notifier).disposeController();
-    super.dispose();
-  }
+  late CaptureController _controller;
 
   @override
   void initState() {
     super.initState();
     // Initialize controller
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(captureControllerProvider.notifier).initialize();
+      _controller = ref.read(captureControllerProvider.notifier);
+      _controller.initialize();
     });
+  }
+
+  @override
+  void dispose() {
+    // Manually stop the capture controller since the provider is kept alive
+    // This fixes the "camera always running" issue
+    // We use the captured _controller to avoid "StateError: Bad state: Using "ref"..."
+    _controller.disposeController();
+    super.dispose();
   }
 
   @override

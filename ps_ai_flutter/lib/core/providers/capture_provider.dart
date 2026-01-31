@@ -82,6 +82,9 @@ class CaptureController extends Notifier<CaptureState> {
     await _cameraService.stopImageStream();
     await _cameraService.dispose();
     await _mlService.dispose();
+    
+    // Reset state to ensure we don't hold onto a disposed controller
+    state = CaptureState(); 
   }
 
   Future<void> initialize() async {
