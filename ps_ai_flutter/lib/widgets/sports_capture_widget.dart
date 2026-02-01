@@ -9,6 +9,7 @@ import 'package:ps_ai_flutter/models/tracking_data.dart';
 import 'package:ps_ai_flutter/widgets/feedback_overlay.dart';
 import 'package:ps_ai_flutter/widgets/tracking_overlay_painter.dart';
 import 'package:ps_ai_flutter/widgets/instruction_overlay.dart';
+import 'package:ps_ai_flutter/core/providers/feedback_provider.dart';
 
 class SportsCaptureWidget extends ConsumerStatefulWidget {
   final int peopleCount;
@@ -61,6 +62,10 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
     );
     final activePlayerId = activePlayerIdAsync.value ?? 'unknown_player';
 
+    // Watch feedback to color the skeleton
+    final feedbackAsync = ref.watch(feedbackStreamProvider);
+    final feedbackColor = feedbackAsync.value?.indicatorColor ?? Colors.green;
+
     if (captureState.status == CaptureStatus.initializing) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -92,6 +97,7 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
                   rotation: captureState.rotation,
                   absoluteImageSize:
                       captureState.cameraController!.value.previewSize!,
+                  skeletonColor: feedbackColor,
                 ),
                 child: Container(),
               ),

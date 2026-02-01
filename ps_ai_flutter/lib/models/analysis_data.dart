@@ -35,7 +35,10 @@ sealed class FeedbackOutput {
     required this.indicatorColor,
     required this.message,
     this.animationEvent,
+    this.audioMessage,
   });
+
+  final String? audioMessage;
 }
 
 /// General feedback subclass for standard usage.
@@ -45,6 +48,7 @@ class GeneralFeedback extends FeedbackOutput {
     required super.indicatorColor,
     required super.message,
     super.animationEvent,
+    super.audioMessage,
   });
 }
 
@@ -59,6 +63,7 @@ class BasketballShootingFeedback extends FeedbackOutput {
     required super.indicatorColor,
     required super.message,
     super.animationEvent,
+    super.audioMessage,
     this.releaseAngle,
     this.shotArc,
   });
@@ -75,6 +80,7 @@ class GymFeedback extends FeedbackOutput {
     required super.indicatorColor,
     required super.message,
     super.animationEvent,
+    super.audioMessage,
     required this.exerciseType,
     this.reps,
     this.phase,

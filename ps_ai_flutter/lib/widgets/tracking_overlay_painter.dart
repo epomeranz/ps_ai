@@ -13,14 +13,17 @@ class TrackingOverlayPainter extends CustomPainter {
     required this.objects,
     required this.absoluteImageSize,
     required this.rotation,
+    this.skeletonColor = Colors.green,
   });
+
+  final Color skeletonColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
-      ..color = Colors.green;
+      ..color = skeletonColor;
 
     final objectPaint = Paint()
       ..style = PaintingStyle.stroke

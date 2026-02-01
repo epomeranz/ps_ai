@@ -58,6 +58,55 @@ class TrackingRepository {
     // This seems to align well.
   }
 
+  Future<void> saveAnalysisResult(
+    String profileId,
+    String sport,
+    String exerciseType,
+    Map<String, dynamic> summaryJson,
+  ) async {
+    try {
+      await _firestore
+          .collection('profiles')
+          .doc(profileId)
+          .collection('sports')
+          .doc(sport)
+          .collection('analysis_results')
+          .add({
+            ...summaryJson,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      print('Error saving analysis result: $e');
+    }
+  }
+
+  Future<TrackingSession?> getReferenceSession(
+    String profileId,
+    String sport,
+    String exerciseId,
+  ) async {
+    try {
+      final docSnapshot = await _firestore
+          .collection('profiles')
+          .doc(profileId)
+          .collection('sports')
+          .doc(sport)
+          .collection('custom_exercises')
+          .doc(exerciseId)
+          .collection('reference_sessions')
+          .doc('standard')
+          .get();
+
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        return TrackingSession.fromJson(docSnapshot.data()!);
+      }
+    } catch (e) {
+      // Handle error or return null
+      print('Error fetching reference session: $e');
+    }
+    return null;
+  }
+
   Stream<List<ExerciseMetadata>> getCustomExercises(
     String profileId,
     String sport,

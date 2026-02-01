@@ -42,8 +42,19 @@ class TrackedObject {
     'y': y,
     'w': w,
     'h': h,
-    'c': confidence,
   };
+
+  factory TrackedObject.fromJson(Map<String, dynamic> json) {
+    return TrackedObject(
+      trackingId: json['id'],
+      label: json['label'],
+      x: (json['x'] as num).toDouble(),
+      y: (json['y'] as num).toDouble(),
+      w: (json['w'] as num).toDouble(),
+      h: (json['h'] as num).toDouble(),
+      confidence: (json['c'] as num).toDouble(),
+    );
+  }
 }
 
 /// Represents a detected person (pose)
@@ -73,6 +84,22 @@ class TrackedPerson {
     });
     return TrackedPerson(id: id, landmarks: lm);
   }
+
+  factory TrackedPerson.fromJson(Map<String, dynamic> json) {
+    final Map<int, List<double>> landmarks = {};
+    if (json['landmarks'] != null) {
+      final Map<String, dynamic> lm = json['landmarks'];
+      lm.forEach((k, v) {
+        landmarks[int.parse(k)] = (v as List)
+            .map((e) => (e as num).toDouble())
+            .toList();
+      });
+    }
+    return TrackedPerson(
+      id: json['id'],
+      landmarks: landmarks,
+    );
+  }
 }
 
 /// A single frame of data
@@ -92,6 +119,22 @@ class FrameData {
     'objects': objects.map((o) => o.toJson()).toList(),
     'people': people.map((p) => p.toJson()).toList(),
   };
+
+  factory FrameData.fromJson(Map<String, dynamic> json) {
+    return FrameData(
+      timestampMs: json['ts'],
+      objects:
+          (json['objects'] as List<dynamic>?)
+              ?.map((e) => TrackedObject.fromJson(e))
+              .toList() ??
+          [],
+      people:
+          (json['people'] as List<dynamic>?)
+              ?.map((e) => TrackedPerson.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
 }
 
 /// The entire recording session
@@ -127,4 +170,20 @@ class TrackingSession {
     'startTime': startTime.toIso8601String(),
     'frames': frames.map((f) => f.toJson()).toList(),
   };
+
+  factory TrackingSession.fromJson(Map<String, dynamic> json) {
+    return TrackingSession(
+      sessionId: json['sessionId'],
+      profileId: json['profileId'],
+      activePlayerId: json['activePlayerId'],
+      sportType: json['sport'],
+      exerciseType: json['exerciseType'],
+      startTime: DateTime.parse(json['startTime']),
+      frames:
+          (json['frames'] as List<dynamic>?)
+              ?.map((e) => FrameData.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
 }

@@ -8,6 +8,10 @@ class BasketballShootingAnalyzer extends SportAnalyzer {
       StreamController<FeedbackOutput>.broadcast();
   StreamSubscription? _inputSubscription;
 
+  double _totalScore = 0.0;
+  int _frameCount = 0;
+  DateTime? _startTime;
+
   @override
   Stream<FeedbackOutput> analyze(Stream<AnalysisInput> input) {
     _inputSubscription = input.listen((data) {
@@ -16,7 +20,21 @@ class BasketballShootingAnalyzer extends SportAnalyzer {
       }
     });
 
+    _startTime = DateTime.now();
     return _outputController.stream;
+  }
+
+  @override
+  AnalysisSummary? get currentSummary {
+    return AnalysisSummary(
+      reps: 0, // Not rep based
+      avgScore: _frameCount > 0 ? _totalScore / _frameCount : 0.0,
+      exerciseType: 'shooting',
+      startTime: _startTime,
+      duration: _startTime != null
+          ? DateTime.now().difference(_startTime!)
+          : Duration.zero,
+    );
   }
 
   void _analyzeFrame(LiveAnalysisInput input) {
@@ -41,7 +59,9 @@ class BasketballShootingAnalyzer extends SportAnalyzer {
         pose.landmarks.values.map((l) => l.likelihood).reduce((a, b) => a + b) /
         pose.landmarks.length;
 
-    double score = confidence;
+    final score = confidence;
+    _totalScore += score;
+    _frameCount++;
     Color color = Colors.red;
     String message = "Adjust form";
     String? animation;
@@ -79,6 +99,8 @@ class BasketballShootingAnalyzer extends SportAnalyzer {
   void dispose() {
     _inputSubscription?.cancel();
     _outputController.close();
-    super.dispose();
+    // super.dispose(); // Abstract method doesn't have body to call? Abstract class defined empty body?
+    // Step 129 shows "void dispose() {}" in SportAnalyzer. So super.dispose() is valid if I revert recent changes to make it abstract.
+    // But Step 130 made it "void dispose();" (abstract). So I should NOT call super.dispose().
   }
 }

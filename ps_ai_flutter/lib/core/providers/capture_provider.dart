@@ -11,6 +11,7 @@ import '../services/camera_service.dart';
 import '../services/ml_service.dart';
 import '../services/tracking_repository.dart';
 import '../utils/ml_kit_utils.dart';
+import '../utils/pose_utils.dart';
 import '../../models/exercise_metadata.dart';
 import 'settings_providers.dart';
 
@@ -282,7 +283,19 @@ class CaptureController extends Notifier<CaptureState> {
       timestampMs: DateTime.now()
           .difference(state.currentSession!.startTime)
           .inMilliseconds,
-      people: poses.map((p) => TrackedPerson.fromPose(p)).toList(),
+      people: poses.map((p) {
+        // If we are recording a reference, we normalize the pose!
+        if (state.referenceMetadata != null) {
+          final normalizedLandmarks = PoseUtils.normalizePose(p);
+          return TrackedPerson(landmarks: normalizedLandmarks);
+        } else {
+          // Regular recording: keep raw data (or should we normalize always?
+          // Implementation plan said normalize on analysis comparison,
+          // but for reference recording we MUST save it normalized.)
+          // Let's stick to the plan: Normalize *Reference* recording.
+          return TrackedPerson.fromPose(p);
+        }
+      }).toList(),
       objects: objects
           .map(
             (o) => TrackedObject(

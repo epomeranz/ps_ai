@@ -49,7 +49,7 @@ class _InstructionOverlayState extends ConsumerState<InstructionOverlay> {
 
     // Auto-hide after 5 seconds (or length of speech if we could measure it, but 5s is safe)
     if (mounted) {
-      Future.delayed(const Duration(seconds: 5), () {
+      Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
           setState(() {
             _isVisible = false;

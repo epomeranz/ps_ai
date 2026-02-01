@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/feedback_service.dart';
 import 'capture_provider.dart';
+import 'package:ps_ai_flutter/core/services/tracking_repository.dart';
 
 final feedbackServiceProvider = Provider<FeedbackService>((ref) {
-  final service = FeedbackService();
+  final trackingRepository = ref.watch(trackingRepositoryProvider);
+  final service = FeedbackService(trackingRepository);
   ref.onDispose(() => service.dispose());
   return service;
 });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../core/providers/capture_provider.dart';
 import '../core/providers/feedback_provider.dart';
 import '../models/analysis_data.dart';
@@ -20,7 +21,9 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late FlutterTts _flutterTts;
   String? _lastAnimationEvent;
+  String? _lastAudioMessage;
 
   @override
   void initState() {
@@ -33,6 +36,7 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
       parent: _animationController,
       curve: Curves.elasticOut,
     );
+    _flutterTts = FlutterTts();
   }
 
   @override
@@ -57,6 +61,33 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
         });
       }
     });
+  }
+
+  void _playAudio(String message) async {
+    if (_lastAudioMessage == message)
+      return; // Simple debounce if repeated exactly same?
+    // Actually, Analyzer throttles time, but effectively we should just speak independent of equality if time passed.
+    // But here we receive stream updates every frame? No, feedback might be frequent.
+    // The Analyzer throttles the *presence* of audioMessage.
+    // If audioMessage is present, we speak it. BUT we must ensure we don't queue up 100 times.
+
+    // Analyzer logic sets audioMessage ONLY ONCE (when time threshold met).
+    // Wait, if it sets it, it will be in the FeedbackOutput for that frame.
+    // If the next frame (33ms later) doesn't have it, good.
+    // If the Analyzer logic sets it for *multiple frames* while condition holds?
+    // My Analyzer logic: `if (now - last > 3s) { audioMsg = ...; last = now; }`
+    // This updates `_lastSpokenTime` IMMEDIATELY. So next frame `difference > 3s` will be FALSE.
+    // So `audioMsg` will be non-null for EXACTLY ONE FRAME (or a few calls).
+
+    // So here, we just speak if audioMessage is not null.
+    // However, `feedbackStreamProvider` might re-emit same value?
+    // Let's just check if it's different from last handled or just fire.
+    // Since Analyzer ensures sparsity, we can probably just speak.
+
+    // But to be safe, let's store last message or just rely on TTS queue:
+    // `await _flutterTts.speak(message);`
+    // If we await, we block UI? No.
+    await _flutterTts.speak(message);
   }
 
   @override
@@ -122,6 +153,11 @@ class _FeedbackOverlayState extends ConsumerState<FeedbackOverlay>
                     if (feedback.animationEvent != null) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _triggerAnimation(feedback.animationEvent!);
+                      });
+                    }
+                    if (feedback.audioMessage != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _playAudio(feedback.audioMessage!);
                       });
                     }
 

@@ -1,19 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:ps_ai_flutter/core/services/tracking_repository.dart';
 import '../providers/capture_provider.dart';
 import '../../models/analysis_data.dart';
 import '../../models/tracking_data.dart';
 import '../analysis/sport_analyzer.dart';
 import '../analysis/basketball_analyzer.dart';
-import '../analysis/squat_analyzer.dart';
+import '../analysis/pose_comparison_analyzer.dart';
 
 // Re-export specific feedback types for consumers
 export '../../models/analysis_data.dart';
 
 class FeedbackService {
+  final TrackingRepository _trackingRepository;
+
   final StreamController<AnalysisInput> _inputController =
       StreamController<AnalysisInput>.broadcast();
   SportAnalyzer? _currentAnalyzer;
+  String? _currentSportType; // Store for saving
   StreamSubscription? _analyzerSubscription;
 
   // Main output stream
@@ -21,15 +25,18 @@ class FeedbackService {
       StreamController<FeedbackOutput>.broadcast();
   Stream<FeedbackOutput> get feedbackStream => _outputController.stream;
 
-  FeedbackService() {
-    setAnalyzerConfig('basketball', 'shooting', Colors.orange); // Default
+  FeedbackService(this._trackingRepository) {
+    // defer default config or remove it?
+    // setAnalyzerConfig('basketball', 'shooting', Colors.orange); // Default
   }
 
   void setAnalyzerConfig(
     String sportType,
     String exerciseType,
-    Color baseColor,
-  ) {
+    Color baseColor, {
+    TrackingSession? referenceSession,
+  }) {
+    _currentSportType = sportType;
     _analyzerSubscription?.cancel();
     _currentAnalyzer?.dispose();
 
@@ -37,16 +44,17 @@ class FeedbackService {
     if (sportType == 'basketball') {
       _currentAnalyzer = BasketballShootingAnalyzer();
     } else if (sportType == 'gym') {
-      _currentAnalyzer = SquatAnalyzer(
+      _currentAnalyzer = PoseComparisonAnalyzer(
         exerciseType: exerciseType,
         baseColor: baseColor,
+        referenceSession: referenceSession,
       );
     } else {
-      // Fallback to generic squat/gym analyzer if unknown, or maybe a truly generic one
-      // For now, assuming gym/squat as fallback for this context
-      _currentAnalyzer = SquatAnalyzer(
+      // Fallback to generic comparison analyzer
+      _currentAnalyzer = PoseComparisonAnalyzer(
         exerciseType: exerciseType,
         baseColor: baseColor,
+        referenceSession: referenceSession,
       );
     }
 
@@ -84,6 +92,20 @@ class FeedbackService {
     );
 
     _inputController.add(input);
+  }
+
+  Future<void> finishSession(String profileId) async {
+    if (_currentAnalyzer == null || _currentSportType == null) return;
+
+    final summary = _currentAnalyzer!.currentSummary;
+    if (summary != null) {
+      await _trackingRepository.saveAnalysisResult(
+        profileId,
+        _currentSportType!,
+        summary.exerciseType,
+        summary.toJson(),
+      );
+    }
   }
 
   void dispose() {
