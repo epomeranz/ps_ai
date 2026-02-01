@@ -12,6 +12,7 @@ import '../services/ml_service.dart';
 import '../services/tracking_repository.dart';
 import '../utils/ml_kit_utils.dart';
 import '../../models/exercise_metadata.dart';
+import 'settings_providers.dart';
 
 enum CaptureStatus { idle, initializing, streaming, recording, paused, error }
 
@@ -61,7 +62,7 @@ class CaptureState {
 
   // Helper to clear reference metadata when resetting
   CaptureState clearReferenceMetadata() {
-     return CaptureState(
+    return CaptureState(
       status: status,
       cameraController: cameraController,
       poses: poses,
@@ -94,10 +95,10 @@ class CaptureController extends Notifier<CaptureState> {
     });
     return CaptureState();
   }
-  
+
   // Public method to force stop
   Future<void> disposeController() async {
-    // We don't mark as _isDisposed here because we might want to re-initialize 
+    // We don't mark as _isDisposed here because we might want to re-initialize
     // this same controller instance later if the provider is kept alive.
     // _isDisposed is strictly for when the Provider is destroyed.
     await _stopAll();
@@ -105,7 +106,7 @@ class CaptureController extends Notifier<CaptureState> {
 
   Future<void> _stopAll() async {
     try {
-      if (_cameraService.controller != null && 
+      if (_cameraService.controller != null &&
           _cameraService.controller!.value.isStreamingImages) {
         await _cameraService.stopImageStream();
       }
@@ -114,21 +115,31 @@ class CaptureController extends Notifier<CaptureState> {
     } catch (e) {
       debugPrint('Error stopping capture services: $e');
     }
-    
+
     // Reset state to ensure we don't hold onto a disposed controller
     // We only update state if the provider itself is not explicitly disposed by Riverpod
     // (i.e., we are manually resetting via disposeController)
     if (!_isDisposed) {
-       state = CaptureState(); 
+      state = CaptureState();
     }
   }
 
-  Future<void> initialize() async {
+  Future<void> initialize(String profileId) async {
     if (_isDisposed) return;
-    
+
     state = state.copyWith(status: CaptureStatus.initializing);
     try {
-      await _cameraService.initialize();
+      // Load settings
+      final settings = await ref
+          .read(settingsServiceProvider)
+          .getSettingsStream(profileId)
+          .first;
+      final preferredLensString = settings['cameraLens'] as String? ?? 'front';
+      final preferredLens = preferredLensString == 'back'
+          ? CameraLensDirection.back
+          : CameraLensDirection.front;
+
+      await _cameraService.initialize(preferredLens: preferredLens);
       await _mlService.initialize();
 
       if (_isDisposed) return;
@@ -144,6 +155,51 @@ class CaptureController extends Notifier<CaptureState> {
       state = state.copyWith(
         status: CaptureStatus.error,
         errorMessage: e.toString(),
+      );
+    }
+  }
+
+  Future<void> switchCamera(String profileId) async {
+    if (state.status != CaptureStatus.streaming &&
+        state.status != CaptureStatus.recording)
+      return;
+
+    // Temporarily set to initializing to unmount CameraPreview from UI
+    // preventing "Disposed CameraController" error
+    final previousStatus = state.status;
+    state = state.copyWith(status: CaptureStatus.initializing);
+
+    try {
+      await _cameraService.switchCamera((image) {
+        if (_isDisposed) return;
+        _processFrame(image);
+      });
+
+      // Update state with new controller info
+      state = state.copyWith(
+        status: previousStatus, // Restore status (usually streaming)
+        cameraController: _cameraService.controller,
+      );
+
+      // Save preference
+      final newLens = _cameraService.currentLensDirection;
+      final newLensString = newLens == CameraLensDirection.back
+          ? 'back'
+          : 'front';
+
+      await ref
+          .read(settingsServiceProvider)
+          .updateSetting(
+            profileId,
+            'cameraLens',
+            newLensString,
+          );
+    } catch (e) {
+      debugPrint("Error switching camera: $e");
+      // Restore previous status on error so user isn't stuck
+      state = state.copyWith(
+        status: previousStatus,
+        errorMessage: "Failed to switch camera",
       );
     }
   }
@@ -193,16 +249,16 @@ class CaptureController extends Notifier<CaptureState> {
       // Process objects every 3rd frame, BUT ONLY IF NOT REFERENCE SESSION
       final bool isReference = state.referenceMetadata != null;
       final bool shouldDetectObjects = !isReference && (_frameCount % 3 == 0);
-      
+
       final result = await _mlService.processFrame(
-        frameData, 
+        frameData,
         detectObjects: shouldDetectObjects,
       );
 
       // Update UI state with rotation
       // Use existing objects if not detected this frame
       final objects = shouldDetectObjects ? result.objects : state.objects;
-      
+
       state = state.copyWith(
         poses: result.poses,
         objects: objects,
@@ -278,7 +334,7 @@ class CaptureController extends Notifier<CaptureState> {
     ExerciseMetadata metadata,
     String profileId,
   ) async {
-     if (state.status != CaptureStatus.streaming) return;
+    if (state.status != CaptureStatus.streaming) return;
 
     final session = TrackingSession(
       sessionId: const Uuid().v4(),
@@ -316,12 +372,14 @@ class CaptureController extends Notifier<CaptureState> {
       final session = state.currentSession;
       if (session != null) {
         if (state.referenceMetadata != null) {
-            await ref.read(trackingRepositoryProvider).saveReferenceExercise(
-              session, 
-              state.referenceMetadata!,
-            );
+          await ref
+              .read(trackingRepositoryProvider)
+              .saveReferenceExercise(
+                session,
+                state.referenceMetadata!,
+              );
         } else {
-            await ref.read(trackingRepositoryProvider).saveSession(session);
+          await ref.read(trackingRepositoryProvider).saveSession(session);
         }
       }
 
@@ -330,7 +388,7 @@ class CaptureController extends Notifier<CaptureState> {
         cameraController: state.cameraController,
         rotation: state.rotation,
         // Keep other config potentially? No, basic reset to streaming.
-      ); 
+      );
     }
   }
 }

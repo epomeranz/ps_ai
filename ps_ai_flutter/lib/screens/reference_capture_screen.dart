@@ -30,7 +30,7 @@ class _ReferenceCaptureScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller = ref.read(captureControllerProvider.notifier);
-      _controller.initialize();
+      _controller.initialize(widget.profileId);
     });
   }
 
@@ -143,6 +143,9 @@ class _ReferenceCaptureScreenState
                 onStop: _handleStop,
                 onPause: () => _controller.pauseRecording(),
                 onResume: () => _controller.resumeRecording(),
+                onSwitchCamera: () {
+                  _controller.switchCamera(widget.profileId);
+                },
               ),
             ),
           ),

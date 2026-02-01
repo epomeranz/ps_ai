@@ -40,7 +40,7 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
     // Initialize controller
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller = ref.read(captureControllerProvider.notifier);
-      _controller.initialize();
+      _controller.initialize(widget.profileId);
     });
   }
 
@@ -159,6 +159,11 @@ class _SportsCaptureWidgetState extends ConsumerState<SportsCaptureWidget> {
         },
         onResume: () {
           ref.read(captureControllerProvider.notifier).resumeRecording();
+        },
+        onSwitchCamera: () {
+          ref
+              .read(captureControllerProvider.notifier)
+              .switchCamera(widget.profileId);
         },
       ),
     ];

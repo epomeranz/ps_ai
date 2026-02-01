@@ -3,28 +3,61 @@ import 'package:camera/camera.dart';
 
 class CameraService {
   CameraController? _controller;
-  final int _cameraIndex = 0;
   List<CameraDescription> _cameras = [];
+  CameraLensDirection _currentLensDirection = CameraLensDirection.front;
 
   CameraController? get controller => _controller;
   bool get isInitialized => _controller?.value.isInitialized ?? false;
+  CameraLensDirection get currentLensDirection => _currentLensDirection;
 
-  Future<void> initialize() async {
+  Future<void> initialize({
+    CameraLensDirection preferredLens = CameraLensDirection.front,
+  }) async {
     if (_cameras.isEmpty) {
       _cameras = await availableCameras();
     }
     if (_cameras.isEmpty) return;
 
+    _currentLensDirection = preferredLens;
+    await _initializeController();
+  }
+
+  Future<void> _initializeController() async {
+    // Find camera with preferred direction, fallback to first available
+    final cameraDescription = _cameras.firstWhere(
+      (camera) => camera.lensDirection == _currentLensDirection,
+      orElse: () => _cameras.first,
+    );
+
+    // If we couldn't find the preferred one and fell back, update state
+    _currentLensDirection = cameraDescription.lensDirection;
+
     _controller = CameraController(
-      _cameras[_cameraIndex],
+      cameraDescription,
       ResolutionPreset.high,
-      enableAudio: true,
+      enableAudio: true, // Keep audio enabled as per original
       imageFormatGroup: Platform.isAndroid
           ? ImageFormatGroup.nv21
           : ImageFormatGroup.bgra8888,
     );
 
     await _controller!.initialize();
+  }
+
+  Future<void> switchCamera(void Function(CameraImage) onImage) async {
+    if (_cameras.isEmpty) return;
+
+    // Toggle direction
+    _currentLensDirection = _currentLensDirection == CameraLensDirection.back
+        ? CameraLensDirection.front
+        : CameraLensDirection.back;
+
+    await stopImageStream();
+    await _controller?.dispose();
+    _controller = null;
+
+    await _initializeController();
+    await startImageStream(onImage);
   }
 
   Future<void> startImageStream(void Function(CameraImage) onImage) async {
@@ -35,7 +68,9 @@ class CameraService {
   Future<void> stopImageStream() async {
     if (!isInitialized) return;
     try {
-      await _controller?.stopImageStream();
+      if (_controller!.value.isStreamingImages) {
+        await _controller?.stopImageStream();
+      }
     } catch (_) {
       // Sometimes it throws if already stopped or disposed
     }

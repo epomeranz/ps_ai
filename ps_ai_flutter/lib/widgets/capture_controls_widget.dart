@@ -7,6 +7,7 @@ class CaptureControlsWidget extends StatelessWidget {
   final VoidCallback onStop;
   final VoidCallback onPause;
   final VoidCallback onResume;
+  final VoidCallback? onSwitchCamera;
 
   const CaptureControlsWidget({
     super.key,
@@ -15,6 +16,7 @@ class CaptureControlsWidget extends StatelessWidget {
     required this.onStop,
     required this.onPause,
     required this.onResume,
+    this.onSwitchCamera,
   });
 
   @override
@@ -57,6 +59,17 @@ class CaptureControlsWidget extends StatelessWidget {
               status == CaptureStatus.paused ? Icons.play_arrow : Icons.pause,
             ),
           ),
+        if (status == CaptureStatus.streaming ||
+            status == CaptureStatus.initializing) ...[
+          const SizedBox(width: 20),
+          FloatingActionButton(
+            heroTag: 'switch_camera_btn',
+            mini: true,
+            backgroundColor: Colors.white,
+            onPressed: onSwitchCamera,
+            child: const Icon(Icons.cameraswitch, color: Colors.blue),
+          ),
+        ],
       ],
     );
   }
