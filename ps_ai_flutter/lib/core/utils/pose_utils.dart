@@ -6,6 +6,27 @@ class PoseUtils {
   /// based on the shoulder width.
   ///
   /// Returns a map of landmark type index to a list of [x, y, z, likelihood].
+  /// The specific landmarks we care about for fitness comparison.
+  /// Excluding facial features and fingers to reduce noise.
+  static const List<PoseLandmarkType> comparisonJoints = [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.leftElbow,
+    PoseLandmarkType.rightElbow,
+    PoseLandmarkType.leftWrist,
+    PoseLandmarkType.rightWrist,
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.rightHip,
+    PoseLandmarkType.leftKnee,
+    PoseLandmarkType.rightKnee,
+    PoseLandmarkType.leftAnkle,
+    PoseLandmarkType.rightAnkle,
+  ];
+
+  /// Normalizes a pose by translating the mid-hip to (0,0,0) and scaling
+  /// based on the shoulder width.
+  ///
+  /// Returns a map of landmark type index to a list of [x, y, z, likelihood].
   static Map<int, List<double>> normalizePose(Pose pose) {
     final landmarks = pose.landmarks;
 
@@ -39,10 +60,13 @@ class PoseUtils {
       }
     }
 
-    // 3. Transform all landmarks
+    // 3. Transform ONLY the comparison landmarks
     final Map<int, List<double>> normalizedLandmarks = {};
 
-    landmarks.forEach((type, landmark) {
+    for (final type in comparisonJoints) {
+      final landmark = landmarks[type];
+      if (landmark == null) continue;
+
       // Translate
       final tx = landmark.x - midHipX;
       final ty = landmark.y - midHipY;
@@ -54,7 +78,7 @@ class PoseUtils {
       final sz = tz * scaleFactor;
 
       normalizedLandmarks[type.index] = [sx, sy, sz, landmark.likelihood];
-    });
+    }
 
     return normalizedLandmarks;
   }

@@ -1,5 +1,6 @@
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
+import 'package:ps_ai_flutter/core/utils/pose_utils.dart';
 
 /// Configuration for a specific object type to track
 class TrackedObjectTypeConfig {
@@ -74,14 +75,20 @@ class TrackedPerson {
 
   static TrackedPerson fromPose(Pose pose, {int? id}) {
     final Map<int, List<double>> lm = {};
-    pose.landmarks.forEach((type, landmark) {
-      lm[type.index] = [
-        landmark.x,
-        landmark.y,
-        landmark.z,
-        landmark.likelihood,
-      ];
-    });
+
+    // Only save the landmarks we care about to keep data clean and small
+    for (final type in PoseUtils.comparisonJoints) {
+      final landmark = pose.landmarks[type];
+      if (landmark != null) {
+        lm[type.index] = [
+          landmark.x,
+          landmark.y,
+          landmark.z,
+          landmark.likelihood,
+        ];
+      }
+    }
+
     return TrackedPerson(id: id, landmarks: lm);
   }
 
